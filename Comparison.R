@@ -1,21 +1,14 @@
 library(tidyverse)
 library(dplyr)
 library(GGally)    
-library(ggiraph)
-library(ggiraphExtra) 
-library(broom)
-library(car)
-library(lubridate)
-library(rstatix)
-library(knitr) 
 
 # EMG comment - it's bad practice to just load libraries that you don't use
 
-jasmine_angle_data=read.csv('Data/Sounders_Health_Assessment_Jasmine.csv',
-                            col.names=c("AoD_J","offset_J","AoD_K","offset_K","julian","ID","year"))
+compare_angle_data=read.csv('Data/Sounders_Health_Assessment_R.csv',
+                            col.names=c("AoD_K","julian","offset","ID","year","AOD_J", "Bradford"))
 
-head(jasmine_angle_data)
-class(jasmine_angle_data$AoD_J)
+head(compare_angle_data)
+class(compare_angle_data$AoD_J)
 
 
 # paired t-test
