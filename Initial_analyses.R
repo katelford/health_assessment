@@ -279,12 +279,32 @@ anova(mem)
 
 # using grey_annual_change for df since it already contains columns: ID, year, first_sight, last_sight
 
-time_in_sound=ggplot(data=grey_annual_change)+
-  geom_segment(aes(x= ?,
+# wrapped by ID
+time_in_sound_ID=ggplot(data=grey_annual_change)+
+  geom_segment(aes(x=first_sight,
+                   xend=last_sight,
+                   y=first_sight_depression_angle,
+                   yend=last_sight_depression_angle,
                    colour=year))+
-  facet_wrap(~ID)
+  facet_wrap(~ID)+
+  ylab("Body Condition Angle")+
+  xlab("Julian Day")
+ggsave(filename="Figures/Stage_3/time_in_sound_ID.png", height=6, width=10)
 
+# wrapped by year
+change_year=grey_annual_change%>%
+  filter(!year%in%c(1990,1995,1998,2000,2004,2005))
 
+time_in_sound_year=ggplot(data=change_year)+
+  geom_segment(aes(x=first_sight,
+                   xend=last_sight,
+                   y=first_sight_depression_angle,
+                   yend=last_sight_depression_angle,
+                   colour=ID))+
+  facet_wrap(~year)+
+  ylab("Body Condition Angle")+
+  xlab("Julian Day")
+ggsave(filename="Figures/Stage_3/time_in_sound_year.png", height=6, width=10)
 
 
 
