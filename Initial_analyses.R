@@ -5,33 +5,37 @@ library(dplyr)
 library(GGally)    
 library(ggiraph)
 library(ggiraphExtra) 
+library(lme4)
 
-angle_data=read.csv('Data/Sounder_angles_1990_2020.csv',
-                    skip=1, col.names=c("ID","category","date","julian_day","year","offset","depression_angle"))
+angle_data=read.csv('Data/Updated.csv',
+                    #col.names=c("depression_angle","ratioA", "ratio","ID","year","julian_day"))
+                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year","bradford","AoD_J", "month"))%>%
+  filter(!(ID=="NA"))
 
+angle_data$ID=as.factor(angle_data$ID)
+angle_data$year=as.factor(angle_data$year)
+angle_data$month=as.factor(angle_data$month)
+angle_data$ratioA=as.integer(angle_data$ratioA)
+angle_data$ratio=as.integer(angle_data$ratio)
 head(angle_data)
 summary(angle_data)
 
 
+
+#### ENDING HERE
+
+
+
 # filter out offsets >1
 low_offset_data=angle_data%>%
-  filter(offset<2)%>%
+  filter(offset<3)%>%
   mutate(ID=as.factor(ID),
          year=as.factor(year),
          offset=as.factor(offset))
 
-#### ENDING HERE
-
-summary(low_offset_data)
-head(low_offset_data)
-dim(low_offset_data)
-
-
-
-
 
 ## plot of all measurements for all years
-ggplot(low_offset_data, aes(x=julian_day, y=depression_angle, colour=year, shape=ID))+
+ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year, shape=ID))+
   geom_point()+
   geom_smooth(method=lm, SE=F)+
   theme_bw()+
@@ -39,29 +43,58 @@ ggplot(low_offset_data, aes(x=julian_day, y=depression_angle, colour=year, shape
   ylab("Depression Angle")
 ggsave(filename="Figures/6_years_of_22.png", height=7, width=5)
 
+#scatterplot of all points
+ggplot(angle_data)+
+  geom_point(aes(x=julian_day, y=depression_angle))+
+  geom_smooth(aes(x=julian_day, y=depression_angle, method="lm"))+
+  xlab("Julian Day")+
+  ylab("Body Condition Angle")
+ggsave(filename="Figures/all_angles_julian.png", height=5, width=6)
+
+#scatterplot of 22
+angle_22=angle_data%>%
+  filter(ID=="22",!year=="1990",!year=="1998",!year=="2003",!year=="2005",!year=="2019")
+
+ggplot(angle_22, aes(x=julian_day, y=depression_angle))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  facet_wrap(~year)+
+  xlab("Julian Day")+
+  ylab("Body Condition Angle")+
+  theme_bw()
+ggsave(filename="Figures/22_angles_julian.png", height=5, width=7)
 
 #offsets=lm(depression_angle~offset, data=low_offset_data)
 #summary(offsets)
 #print(low_offset_data$offset)
 
 
-# plot julian day vs angle by year for 22
-data_22=low_offset_data%>%
-  filter(ID==22,
-         year%in%c(2006,2010,2015,2018,2019,2020))
+# plot julian day vs angle by year and by ID
 
-ggplot(data_22, aes(x=julian_day, y=depression_angle))+
+angle_data_filter=angle_data%>%
+  filter(!(ID=="185"))
+
+ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   geom_point()+
-  facet_wrap(~year, nrow=3)+
-  geom_smooth(method=lm)+
+  facet_wrap(~year, nrow=5)+
+  #geom_smooth(method=lm)+
   theme_bw()+
   xlab("Julian Day")+
-  ylab("Depression Angle")
-ggsave(filename="Figures/6_years_of_22.png", height=7, width=5)
+  ylab("Body Condition Angle")
+ggsave(filename="Figures/angle_day_year.png", height=7, width=7)
+
+ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+
+  geom_point()+
+  facet_wrap(~ID, nrow=3)+
+  #geom_smooth(method=lm)+
+  theme_bw()+
+  xlab("Julian Day")+
+  ylab("Body Condition Angle")
+ggsave(filename="Figures/angle_day_ID.png", height=5, width=7)
 
   
 # ANOVA
-sounder_anova=aov(depression_angle~julian_day+ID, data=low_offset_data)
+sounder_anova=aov(depression_angle~julian_day+ID, data=angle_data)
 summary(sounder_anova) 
 
 lm_sounder=lm(depression_angle~ID+julian_day+year, data=low_offset_data)
@@ -74,8 +107,9 @@ summary(best_model)
 # Create a data frame for each individual whale in each year that contains the first date sighted, 
 # the last date sighted, the total sighting period that year (in days), and the difference in 
 # depression angle between the first and last sighting of the year
-grey_annual_change=low_offset_data%>%
+grey_annual_change=angle_data%>%
   group_by(ID, year) %>%
+  filter(!(ID=="185"))%>%
   summarize(first_sight=min(julian_day),
             last_sight=max(julian_day)) %>%   # groups by ID, then year and adds 2 new columns
   ungroup()%>%
@@ -104,7 +138,21 @@ ggplot(data=grey_annual_change)+
   theme_bw() +
   scale_color_discrete(name="whale ID") +
   ylab("Difference in depression angle between\nfirst and last sighting of the season") + xlab("Sighting period (days)")
-ggsave(filename="Figures/change_in_angle_over_sight_period_bby_ID.png", height=8, width=12)
+ggsave(filename="Figures/change_in_angle_over_sight_period_by_ID.png", height=8, width=12)
+
+  # plot but only 22
+annual_change_22 = grey_annual_change %>%
+  filter(ID==22)
+  
+  
+ggplot(data=annual_change_22)+
+  geom_point(aes(x=sight_period_days, y=diff_depression_angle, color=year)) +
+  geom_smooth(aes(x=sight_period_days, y=diff_depression_angle), method="lm") +
+  facet_wrap(~ID)+
+  theme_bw() +
+  scale_color_discrete(name="whale ID") +
+  ylab("Difference in depression angle between\nfirst and last sighting of the season") + xlab("Sighting period (days)")
+ggsave(filename="Figures/22_change_in_angle_over_sight_period.png", height=6, width=5)
 
 # PLOT diff in sighting vs angle coloured by ID, facetwrap by year
 ggplot(data=grey_annual_change)+
@@ -115,6 +163,19 @@ ggplot(data=grey_annual_change)+
   scale_color_discrete(name="whale ID") +
   ylab("Difference in depression angle between\nfirst and last sighting of the season") + xlab("Sighting period (days)")
 ggsave(filename="Figures/change_in_angle_over_sight_period_by_year.png", height=8, width=12)
+
+  # plot but only 2009-2013
+filtered_annual_change = grey_annual_change %>%
+  filter(year%in%c(year == 2010,2009,2011,2012,2013))
+
+ggplot(data=filtered_annual_change)+
+  geom_point(aes(x=sight_period_days, y=diff_depression_angle, color=ID)) +
+  geom_smooth(aes(x=sight_period_days, y=diff_depression_angle), method="lm") +
+  facet_wrap(~year)+
+  theme_bw() +
+  scale_color_discrete(name="whale ID") +
+  ylab("Difference in depression angle between\nfirst and last sighting of the season") + xlab("Sighting period (days)")
+ggsave(filename="Figures/filtered_change_in_angle_over_sight_period_by_year.png", height=3, width=5)
 
 
 # lm
@@ -133,24 +194,26 @@ summary(lm_diff_angle_vs_sight_period_id_year)
 
 ### Length of time in sound when minimal benefit
 
-head(low_offset_data)
-range(low_offset_data$depression_angle)
+head(angle_data)
+range(angle_data$depression_angle)
 
+angle_data=angle_data%>%
+  filter(!(ID=="NA"))
 
-ggplot(data=low_offset_data)+
+ggplot(data=angle_data)+
   geom_boxplot(aes(y=ID, 
-                   x=depression_angle))
+                   x=depression_angle))+
+  theme_bw()+
+  xlab("Body Condition Angle")
 ggsave(filename="figures/range_angle_boxplot.png", width=6, height=4.5)
 
-low_offset_data %>%
+angle_data %>%
   count(ID)
 
 
 # remove IDs 185 and 365 for low sighting history
-benefit=low_offset_data
-
-benefit=benefit%>%
-  filter(!(ID == "185"),!(ID=="356"))
+benefit=angle_data%>%
+  filter(!(ID == "185"),!(ID=="356"),!(ID=="NA"))
 
 ggplot(data=benefit)+
   geom_boxplot(aes(y=ID, 
@@ -159,7 +222,7 @@ ggsave(filename="figures/filtered_range_angle_boxplot.png", width=6, height=4.5)
 
 
 # narrowed down to rough average spread to "minimal benefit" sightings
-filtered_grey_annual_change=low_offset_data%>%
+filtered_grey_annual_change=angle_data%>%
   group_by(ID, year) %>%
   summarize(first_sight=min(julian_day),
             last_sight=max(julian_day)) %>%   # groups by ID, then year and adds 2 new columns
@@ -228,7 +291,7 @@ ggsave(filename="Figures/Stage_2/BENEFIT_2_change_in_angle_over_sight_period_by_
     # check with john about survey efforts and importance of sighting periods
 
 
-year_w_ID_count=filtered_grey_annual_change %>%
+year_w_ID_count=grey_annual_change %>%
   group_by(year)%>%
   summarise(number_of_IDs=n_distinct(ID))
 
@@ -261,10 +324,9 @@ ggplot(data=high_comp_years)+
 
 
 ### mixed effects model
-library(lme4)
-
 mem=lmer(diff_depression_angle~year+(1|ID), data=filtered_grey_annual_change)
 summary(mem)
+vcov(mem)
 
 anova(mem)
     ## I think this means ID does not have a significant effect
@@ -280,6 +342,9 @@ anova(mem)
 # using grey_annual_change for df since it already contains columns: ID, year, first_sight, last_sight
 
 # wrapped by ID
+grey_annual_change%>%
+  filter(!(ID==185))
+
 time_in_sound_ID=ggplot(data=grey_annual_change)+
   geom_segment(aes(x=first_sight,
                    xend=last_sight,
@@ -288,8 +353,25 @@ time_in_sound_ID=ggplot(data=grey_annual_change)+
                    colour=year))+
   facet_wrap(~ID)+
   ylab("Body Condition Angle")+
-  xlab("Julian Day")
+  xlab("Julian Day")+
+  theme_bw()
 ggsave(filename="Figures/Stage_3/time_in_sound_ID.png", height=6, width=10)
+
+  # only 22
+time_22 = grey_annual_change %>%
+  filter(ID==22)
+
+ggplot(data=time_22)+
+  geom_segment(aes(x=first_sight,
+                   xend=last_sight,
+                   y=first_sight_depression_angle,
+                   yend=last_sight_depression_angle,
+                   colour=year))+
+  facet_wrap(~ID)+
+  ylab("Body Condition Angle")+
+  xlab("Julian Day")+
+  theme_bw()
+ggsave(filename="Figures/Stage_3/time_22.png", height=4, width=6)
 
 # wrapped by year
 change_year=grey_annual_change%>%
@@ -303,12 +385,74 @@ time_in_sound_year=ggplot(data=change_year)+
                    colour=ID))+
   facet_wrap(~year)+
   ylab("Body Condition Angle")+
-  xlab("Julian Day")
+  xlab("Julian Day")+
+  theme_bw()
 ggsave(filename="Figures/Stage_3/time_in_sound_year.png", height=6, width=10)
 
 
+### general count
+ggplot(angle_data)+
+  geom_bar(aes(x=year, fill=ID))+
+  xlab("Year")+
+  ylab("Measurements")+
+  theme_bw()
+ggsave(filename="Figures/Stage_3/count_year.png", height=6, width=10)
+
+ggplot(angle_data)+
+  geom_bar(aes(x=ID))+
+  xlab("ID")+
+  ylab("Measurements")+
+  theme_bw()
+ggsave(filename="Figures/Stage_3/count_ID.png", height=3, width=5)
+
+ggplot(angle_data)+
+  geom_bar(aes(x=month))+
+  xlab("Month")+
+  ylab("Count")+
+  theme_bw()
+ggsave(filename="Figures/Stage_3/count_month.png", height=4, width=5)
 
 
 
+### linear regression
+lm_angle_vs_day_low_offset = lm(depression_angle~julian_day, data=low_offset_data)
+summary(lm_angle_vs_day_low_offset)
+
+lm_angle_vs_day = lm(depression_angle~julian_day, data=angle_data)
+summary(lm_angle_vs_day)
+
+
+### mixed effects
+mixed_low_offset=lmer(depression_angle~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_offset_data)
+summary(mixed_low_offset)
+anova(mixed_low_offset)
+
+mixed=lmer(depression_angle~julian_day + (1|year), data=angle_data)
+summary(mixed)
+anova(mixed)
+
+mixed_ext=lmer(depression_angle~julian_day  + (1|year) + (1|ID) + (1|offset), data=angle_data)
+summary(mixed_ext)
+anova(mixed_ext)
+
+mixed_22=lmer(depression_angle~julian_day + (1|year), data=data_22)
+summary(mixed_22)
+anova(mixed_22)
+
+linear_ID=lm(depression_angle~julian_day:ID, data=angle_data)
+summary(linear_ID)
+
+linear_year=lm(depression_angle~julian_day:year, data=angle_data)
+summary(linear_year)
+
+bradford=lm(depression_angle~bradford, data=angle_data)
+summary(bradford) #but not sure this actually tells me anything...
+
+brad_lr=glm(bradford~depression_angle, data=angle_data)
+summary(brad_lr)
+
+ggplot(data = angle_data)+
+  geom_point(aes(x=depression_angle, y=bradford))+
+  facet_wrap("ID")
 
 
