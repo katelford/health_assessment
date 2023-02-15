@@ -5,7 +5,7 @@ library(GGally)
 
 compare_angle_data=read.csv('Data/Updated.csv',
                             col.names=c("AoD_K","ratioA", "ratio","julian_day","offset",
-                                        "ID","year","bradford","AoD_J", "month"))%>%
+                                        "ID","year","AoD_J","bradford", "month"))%>%
   filter(!(ID=="NA"))
 
 compare_angle_data$ID=as.factor(compare_angle_data$ID)

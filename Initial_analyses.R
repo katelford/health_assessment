@@ -9,7 +9,7 @@ library(lme4)
 
 angle_data=read.csv('Data/Updated.csv',
                     #col.names=c("depression_angle","ratioA", "ratio","ID","year","julian_day"))
-                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year","bradford","AoD_J", "month"))%>%
+                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year","AoD_J","bradford", "month"))%>%
   filter(!(ID=="NA"))
 
 angle_data$ID=as.factor(angle_data$ID)
@@ -20,36 +20,34 @@ angle_data$ratio=as.integer(angle_data$ratio)
 head(angle_data)
 summary(angle_data)
 
+low_offset_data=angle_data%>%
+  filter(offset<3)
 
+### remove low count IDs
+low_ID_data=angle_data%>%
+  filter(!ID=="185",!ID=="356", !ID=="44", !ID=="56", !ID=="531", offset<3)
 
 #### ENDING HERE
 
 
 
-# filter out offsets >1
-low_offset_data=angle_data%>%
-  filter(offset<3)%>%
-  mutate(ID=as.factor(ID),
-         year=as.factor(year),
-         offset=as.factor(offset))
-
-
 ## plot of all measurements for all years
-ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year, shape=ID))+
+ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+ #, shape=ID))+
   geom_point()+
-  geom_smooth(method=lm, SE=F)+
+ # geom_smooth(method=lm, SE=F)+
   theme_bw()+
   xlab("Julian Day")+
   ylab("Depression Angle")
 ggsave(filename="Figures/6_years_of_22.png", height=7, width=5)
 
 #scatterplot of all points
-ggplot(angle_data)+
+ggplot(low_ID_data)+
   geom_point(aes(x=julian_day, y=depression_angle))+
   geom_smooth(aes(x=julian_day, y=depression_angle, method="lm"))+
   xlab("Julian Day")+
-  ylab("Body Condition Angle")
-ggsave(filename="Figures/all_angles_julian.png", height=5, width=6)
+  ylab("Body Condition Angle")+
+  theme_bw()
+ggsave(filename="Figures/all_angles_julian_filteredID.png", height=5, width=6)
 
 #scatterplot of 22
 angle_22=angle_data%>%
@@ -71,9 +69,6 @@ ggsave(filename="Figures/22_angles_julian.png", height=5, width=7)
 
 # plot julian day vs angle by year and by ID
 
-angle_data_filter=angle_data%>%
-  filter(!(ID=="185"))
-
 ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   geom_point()+
   facet_wrap(~year, nrow=5)+
@@ -83,7 +78,7 @@ ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   ylab("Body Condition Angle")
 ggsave(filename="Figures/angle_day_year.png", height=7, width=7)
 
-ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+
+ggplot(low_ID_data, aes(x=julian_day, y=depression_angle, colour=year))+
   geom_point()+
   facet_wrap(~ID, nrow=3)+
   #geom_smooth(method=lm)+
@@ -415,18 +410,28 @@ ggsave(filename="Figures/Stage_3/count_month.png", height=4, width=5)
 
 
 ### linear regression
-lm_angle_vs_day_low_offset = lm(depression_angle~julian_day, data=low_offset_data)
-summary(lm_angle_vs_day_low_offset)
-
 lm_angle_vs_day = lm(depression_angle~julian_day, data=angle_data)
 summary(lm_angle_vs_day)
 
+lm_angle_vs_day_low_offset = lm(depression_angle~julian_day, data=low_offset_data)
+summary(lm_angle_vs_day_low_offset)
+
+lm_angle_vs_day_low_ID = lm(depression_angle~julian_day, data=low_ID_data)
+summary(lm_angle_vs_day_low_ID)
+
+# Jasmine
+lm_angle_vs_day = lm(AoD_J~julian_day, data=angle_data)
+summary(lm_angle_vs_day)
+
+lm_angle_vs_day_low_offset = lm(AoD_J~julian_day, data=low_offset_data)
+summary(lm_angle_vs_day_low_offset)
+
+lm_angle_vs_day_low_ID = lm(AoD_J~julian_day, data=low_ID_data)
+summary(lm_angle_vs_day_low_ID)
+
+
 
 ### mixed effects
-mixed_low_offset=lmer(depression_angle~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_offset_data)
-summary(mixed_low_offset)
-anova(mixed_low_offset)
-
 mixed=lmer(depression_angle~julian_day + (1|year), data=angle_data)
 summary(mixed)
 anova(mixed)
@@ -435,24 +440,42 @@ mixed_ext=lmer(depression_angle~julian_day  + (1|year) + (1|ID) + (1|offset), da
 summary(mixed_ext)
 anova(mixed_ext)
 
-mixed_22=lmer(depression_angle~julian_day + (1|year), data=data_22)
+mixed_low_offset=lmer(depression_angle~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_offset_data)
+summary(mixed_low_offset)
+anova(mixed_low_offset)
+
+mixed_low_ID=lmer(depression_angle~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_ID_data)
+summary(mixed_low_ID)
+anova(mixed_low_ID)
+
+mixed_22=lmer(depression_angle~julian_day + (1|year) + (1|offset), data=data_22)
 summary(mixed_22)
 anova(mixed_22)
 
+# Jasmine measurments 
+
+mixed_ext=lmer(AoD_J~julian_day  + (1|year) + (1|ID) + (1|offset), data=angle_data)
+summary(mixed_ext)
+anova(mixed_ext)
+
+mixed_low_offset=lmer(AoD_J~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_offset_data)
+summary(mixed_low_offset)
+anova(mixed_low_offset)
+
+mixed_low_ID=lmer(AoD_J~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_ID_data)
+summary(mixed_low_ID)
+anova(mixed_low_ID)
+
+
+###
 linear_ID=lm(depression_angle~julian_day:ID, data=angle_data)
 summary(linear_ID)
 
 linear_year=lm(depression_angle~julian_day:year, data=angle_data)
 summary(linear_year)
 
-bradford=lm(depression_angle~bradford, data=angle_data)
-summary(bradford) #but not sure this actually tells me anything...
-
-brad_lr=glm(bradford~depression_angle, data=angle_data)
-summary(brad_lr)
-
 ggplot(data = angle_data)+
   geom_point(aes(x=depression_angle, y=bradford))+
-  facet_wrap("ID")
+  facet_wrap("year")
 
 
