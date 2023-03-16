@@ -4,8 +4,7 @@ library(GGally)
 
 
 compare_angle_data=read.csv('Data/Updated.csv',
-                            col.names=c("AoD_K","ratioA", "ratio","julian_day","offset",
-                                        "ID","year","AoD_J","bradford", "month"))%>%
+                            col.names=c("AoD_K","ratioA", "ratio","julian_day","offset","ID","year", "bradford","AoD_J", "month"))%>%
   filter(!(ID=="NA"))
 
 compare_angle_data$ID=as.factor(compare_angle_data$ID)
@@ -44,7 +43,7 @@ plot(x=compare_angle_data$AoD_J, y=compare_angle_data$AoD_K)
 
 ### Bradford
 ggplot(data = compare_angle_data)+
-  geom_point(aes(x=AoD_K, y=bradford))+
+  geom_point(aes(x=AoD_J, y=bradford))+
   facet_wrap("ID")
 
 anovaBrad=aov(AoD_K~bradford, data=compare_angle_data)

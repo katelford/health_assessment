@@ -8,8 +8,7 @@ library(ggiraphExtra)
 library(lme4)
 
 angle_data=read.csv('Data/Updated.csv',
-                    #col.names=c("depression_angle","ratioA", "ratio","ID","year","julian_day"))
-                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year","AoD_J","bradford", "month"))%>%
+                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year", "bradford","AoD_J", "month"))%>%
   filter(!(ID=="NA"))
 
 angle_data$ID=as.factor(angle_data$ID)
@@ -38,7 +37,7 @@ ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+ #, shape
   theme_bw()+
   xlab("Julian Day")+
   ylab("Depression Angle")
-ggsave(filename="Figures/6_years_of_22.png", height=7, width=5)
+ggsave(filename="Figures/all_year_scatter.png", height=7, width=5)
 
 #scatterplot of all points
 ggplot(low_ID_data)+
@@ -72,13 +71,13 @@ ggsave(filename="Figures/22_angles_julian.png", height=5, width=7)
 ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   geom_point()+
   facet_wrap(~year, nrow=5)+
-  #geom_smooth(method=lm)+
+  geom_smooth(method=lm)+
   theme_bw()+
   xlab("Julian Day")+
   ylab("Body Condition Angle")
 ggsave(filename="Figures/angle_day_year.png", height=7, width=7)
 
-ggplot(low_ID_data, aes(x=julian_day, y=depression_angle, colour=year))+
+ggplot(low_offset_data, aes(x=julian_day, y=depression_angle, colour=year))+
   geom_point()+
   facet_wrap(~ID, nrow=3)+
   #geom_smooth(method=lm)+
@@ -202,6 +201,12 @@ ggplot(data=angle_data)+
   xlab("Body Condition Angle")
 ggsave(filename="figures/range_angle_boxplot.png", width=6, height=4.5)
 
+ggplot(data=low_offset_data)+
+  geom_boxplot(aes(y=ID, 
+                   x=depression_angle))+
+  theme_bw()+
+  xlab("Body Condition Angle")
+
 angle_data %>%
   count(ID)
 
@@ -246,26 +251,18 @@ filtered_grey_annual_change=filtered_grey_annual_change%>%
 
 # plot number of days in sound vs angle
 ggplot(filtered_grey_annual_change)+
-  geom_point(aes(x=sight_period_days,
-             y=diff_depression_angle,
-             colour=ID))+
-  stat_smooth(method = "lm", 
-              se=F,
-              aes(x=sight_period_days,
-                  y=diff_depression_angle,
-                  colour=ID))+
+  geom_point(aes(x=sight_period_days, y=diff_depression_angle, colour=ID))+
+  stat_smooth(method = "lm", se=F, 
+              aes(x=sight_period_days, y=diff_depression_angle, colour=ID))+
+  xlab("Sighting Period (Days)")+
+  ylab("Difference in first and last BC angle of the season")
   theme_bw()
 ggsave(filename="Figures/Stage_2/BENEFIT_1_change_in_angle_over_sight_period_by_ID.png", height=10, width=12)
 
 ggplot(filtered_grey_annual_change)+
-  geom_point(aes(y=sight_period_days,
-                 x=diff_depression_angle,
-                 colour=ID))+
-  stat_smooth(method = "lm", 
-              se=F,
-              aes(y=sight_period_days,
-                  x=diff_depression_angle,
-                  colour=ID))+
+  geom_point(aes(y=sight_period_days,x=diff_depression_angle,colour=ID))+
+  stat_smooth(method = "lm", se=F,
+              aes(y=sight_period_days,x=diff_depression_angle,colour=ID))+
   theme_bw()
 ggsave(filename="Figures/Stage_2/BENEFIT_2_change_in_angle_over_sight_period_by_ID.png", height=12, width=10)
 
@@ -314,7 +311,7 @@ high_comp_years=filtered_grey_annual_change%>%
 
 ggplot(data=high_comp_years)+
   geom_point(aes(x=number_of_IDs,
-             y=diff_depression_angle,     #why can't it find this?
+             y=diff_depression_angle,     
              colour=year))
 
 
@@ -452,7 +449,7 @@ mixed_22=lmer(depression_angle~julian_day + (1|year) + (1|offset), data=data_22)
 summary(mixed_22)
 anova(mixed_22)
 
-# Jasmine measurments 
+# Jasmine measurements 
 
 mixed_ext=lmer(AoD_J~julian_day  + (1|year) + (1|ID) + (1|offset), data=angle_data)
 summary(mixed_ext)
@@ -477,5 +474,26 @@ summary(linear_year)
 ggplot(data = angle_data)+
   geom_point(aes(x=depression_angle, y=bradford))+
   facet_wrap("year")
+
+ggplot(data = angle_data)+
+  geom_point(aes(x=julian_day, y=AoD_J))+
+  facet_wrap("year")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
