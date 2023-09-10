@@ -18,14 +18,13 @@ library(ggiraphExtra)
 library(lme4)
 
 angle_data=read.csv('Data/Updated.csv',
-                    col.names=c("depression_angle","ratioA", "ratio","julian_day","offset","ID","year","AoD_J","bradford", "month"))%>%
+                    col.names=c("depression_angle","julian_day","offset","ID","year", "AoD_J","bradford", "month"))%>%
   filter(!(ID=="NA"))
 
+angle_data$depression_angle=as.integer(angle_data$depression_angle)
 angle_data$ID=as.factor(angle_data$ID)
 angle_data$year=as.factor(angle_data$year)
 angle_data$month=as.factor(angle_data$month)
-angle_data$ratioA=as.integer(angle_data$ratioA)
-angle_data$ratio=as.integer(angle_data$ratio)
 
 low_offset_data=angle_data%>%
   filter(offset<3)
@@ -34,7 +33,7 @@ low_ID_data=low_offset_data%>%
   filter(!ID=="185",!ID=="356", !ID=="44", !ID=="56", !ID=="531")
 
 
-grey_annual_change=angle_data%>%
+grey_annual_change=low_offset_data%>%
   group_by(ID, year) %>%
   filter(!(ID=="185"))%>%
   summarize(first_sight=min(julian_day),
@@ -57,7 +56,7 @@ grey_annual_change=angle_data%>%
          diff_depression_angle=last_sight_depression_angle-first_sight_depression_angle)
 
 
-filtered_grey_annual_change=angle_data%>%
+filtered_grey_annual_change=low_offset_data%>%
   group_by(ID, year) %>%
   summarize(first_sight=min(julian_day),
             last_sight=max(julian_day)) %>%   # groups by ID, then year and adds 2 new columns
@@ -162,9 +161,9 @@ ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+
   xlab("Julian Day")+
   ylab("Depression Angle")
 
-ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
+ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+
   geom_point()+
-  facet_wrap(~year, nrow=5)+
+  facet_wrap(~ID, nrow=3)+
   theme_bw()+
   xlab("Julian Day")+
   ylab("Body Condition Angle")
@@ -175,9 +174,12 @@ ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   xlab("Julian Day")+
   ylab("Depression Angle")
 
-ggplot(angle_data, aes(x=julian_day, y=depression_angle, colour=year))+
+year_data=angle_data%>%
+  filter(!year%in%c(1990,1991,1992,1998,2000,2002,2003,2004,2005,2007,2008))
+
+ggplot(year_data, aes(x=julian_day, y=depression_angle, colour=ID))+
   geom_point()+
-  facet_wrap(~ID, nrow=3)+
+  facet_wrap(~year, nrow=4)+
   theme_bw()+
   xlab("Julian Day")+
   ylab("Body Condition Angle")

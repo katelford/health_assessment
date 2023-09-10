@@ -1,10 +1,12 @@
+
+
 library(tidyverse)
 library(dplyr)
 library(GGally)    
 
 
 compare_angle_data=read.csv('Data/Updated.csv',
-                            col.names=c("AoD_K","ratioA", "ratio","julian_day","offset","ID","year", "bradford","AoD_J", "month"))%>%
+                            col.names=c("AoD_K","julian_day","offset","ID","year", "AoD_J","bradford", "month"))%>%
   filter(!(ID=="NA"))
 
 compare_angle_data$ID=as.factor(compare_angle_data$ID)
@@ -18,34 +20,72 @@ class(compare_angle_data$bradford)
 
 filter(compare_angle_data, !is.na(AoD_J) | AoD_J!="", !is.na(AoD_K) | AoD_K!="", !is.na(bradford) | bradford!="")
 
+low_offset_data=compare_angle_data%>%
+  filter(offset<3)
+
+
+
+
 
 # paired t-test
-### jasmine_angle_data%>%levene_test(AoD_J~AoD_K) popping up with error
-
-# t.test(compare_angle_data$AoD_J~compare_angle_data$AoD_K, paired=T)
-
-
-
-# EMG's code
-# I looked up t.test in the help file and read the part about "If paired is TRUE" under the Details section
-# This made me realize you need to specify x and y explicitly (rather than using the formulaic method with ~)
 t.test(x=compare_angle_data$AoD_J, y=compare_angle_data$AoD_K, paired=T)
-# p-value is not significant which is good - there is not a significant difference in means
-# between the Jasmine and Kira
 
-cor(x=compare_angle_data$AoD_J, y=compare_angle_data$AoD_K, use="complete.obs")
-# it's a nice correlation, tho I suppose you'd be hoping for higher.
-# this value may improve with more measurements (higher sample size)
 
-plot(x=compare_angle_data$AoD_J, y=compare_angle_data$AoD_K)
-# scatter plot shows good agreement btwn analysts
+cor.test(x=compare_angle_data$AoD_J, y=compare_angle_data$AoD_K, use="complete.obs")
+
+
+
+ggplot(data=compare_angle_data, aes(x=AoD_J, y=AoD_K))+
+  geom_point()+
+  xlab("Witt")+
+  ylab("Telford")+
+  theme_bw()+
+  geom_abline(intercept=0, slope=1, colour="red")
+ggsave(filename="Figures/jasmineVkira_all.png", height=5, width=6)
 
 
 ### Bradford
-ggplot(data = compare_angle_data)+
+brad=compare_angle_data%>%
+  filter(!is.na(bradford))
+
+#brad=low_ID_data%>%
+ # filter(!is.na(bradford))
+
+
+ggplot(data = brad)+
   geom_point(aes(x=AoD_J, y=bradford))+
-  facet_wrap("ID")
+  xlab("Telford")+
+  ylab("Bradford")+
+  facet_wrap("ID", nrow = 4)+
+  theme_bw()
+ggsave(filename="Figures/bradford_all.png", height=7, width=8)
 
-anovaBrad=aov(AoD_K~bradford, data=compare_angle_data)
-summary(anovaBrad)
 
+#### low id and offset
+t.test(x=low_ID_data$AoD_J, y=low_ID_data$AoD_K, paired=T)
+
+cor(x=low_ID_data$AoD_J, y=low_ID_data$AoD_K, use="complete.obs")
+
+
+ggplot(data=low_ID_data, aes(x=AoD_J, y=AoD_K))+
+  geom_point()+
+  xlab("Witt")+
+  ylab("Telford")+
+  theme_bw()+
+  geom_abline(intercept=0, slope=1, colour="red")
+ggsave(filename="Figures/jasmineVkira_filtered.png", height=5, width=6)
+
+
+# Bradford
+bradford=low_ID_data%>%
+  filter(!is.na(bradford))
+
+summary(bradford)
+
+ggplot(data = bradford)+
+  geom_point(aes(x=AoD_J, y=bradford))+
+  xlab("Telford")+
+  ylab("Bradford")+
+  facet_wrap("ID")+
+  theme_bw()
+ggsave(filename="Figures/bradford_filtered.png", height=5, width=7)
