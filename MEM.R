@@ -74,7 +74,6 @@ https://www.azandisresearch.com/2022/12/31/visualize-mixed-effect-regressions-in
 # all data
 mixed_ext=lmer(depression_angle~julian_day  + (1|year) + (1|ID) + (1|offset), data=angle_data)
 summary(mixed_ext)
-anova(mixed_ext)
 
 all=angle_data%>%
   mutate(fit.m=predict(mixed_ext, re.form=NA),
@@ -83,12 +82,12 @@ all=angle_data%>%
 ggplot(aes(x=julian_day, y=depression_angle), data=all) +
   geom_point(pch=16, col="grey") +
   geom_line(aes(y=fit.m), col=1, size=2)
+ggsave(filename="Figures/MEM_all.png", height=6, width=10)
 
 
 # low offset data
 mixed_low_offset=lmer(depression_angle~julian_day + (1|year)+ (1|ID) + (1|offset), data=low_offset_data)
 summary(mixed_low_offset)
-anova(mixed_low_offset)
 
 low=low_offset_data%>%
   mutate(fit.m=predict(mixed_low_offset, re.form=NA),
@@ -97,6 +96,7 @@ low=low_offset_data%>%
 ggplot(aes(x=julian_day, y=depression_angle), data=low) +
   geom_point(pch=16, col="grey") +
   geom_line(aes(y=fit.m), col=1, size=2)
+ggsave(filename="Figures/MEM_lowoffset.png", height=6, width=10)
 
 
 

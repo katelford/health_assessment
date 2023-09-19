@@ -62,12 +62,12 @@ ggsave(filename="Figures/bradford_all.png", height=7, width=8)
 
 
 #### low id and offset
-t.test(x=low_ID_data$AoD_J, y=low_ID_data$AoD_K, paired=T)
+t.test(x=low_offset_data$AoD_J, y=low_offset_data$AoD_K, paired=T)
 
-cor(x=low_ID_data$AoD_J, y=low_ID_data$AoD_K, use="complete.obs")
+cor(x=low_offset_data$AoD_J, y=low_offset_data$AoD_K, use="complete.obs")
 
 
-ggplot(data=low_ID_data, aes(x=AoD_J, y=AoD_K))+
+ggplot(data=low_offset_data, aes(x=AoD_J, y=AoD_K))+
   geom_point()+
   xlab("Witt")+
   ylab("Telford")+
@@ -77,7 +77,7 @@ ggsave(filename="Figures/jasmineVkira_filtered.png", height=5, width=6)
 
 
 # Bradford
-bradford=low_ID_data%>%
+bradford=low_offset_data%>%
   filter(!is.na(bradford))
 
 summary(bradford)
